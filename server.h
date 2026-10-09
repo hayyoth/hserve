@@ -7,7 +7,6 @@ typedef struct {
   const char *path;
 } ServerConfig;
 
-int server_parse_args(int argc, char **argv, ServerConfig *config);
 int server_run(const ServerConfig *config);
 
 #endif

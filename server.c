@@ -3,7 +3,6 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -15,59 +14,6 @@
 #include "http.h"
 
 #define MAX_WORKERS 32
-
-static void usage(const char *name) {
-  fprintf(stderr, "Usage: %s [-p port] [-h host] [path]\n", name);
-}
-
-static int valid_port(const char *s) {
-  if (!s || !*s)
-    return 0;
-
-  char *end;
-  errno = 0;
-  long n = strtol(s, &end, 10);
-
-  return errno == 0 && *end == '\0' && n >= 1 && n <= 65535;
-}
-
-int server_parse_args(int argc, char **argv, ServerConfig *cfg) {
-  cfg->host = "localhost";
-  cfg->port = "8080";
-  cfg->path = ".";
-
-  int path_set = 0;
-
-  for (int i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "--help")) {
-      usage(argv[0]);
-      exit(0);
-    } else if (!strcmp(argv[i], "-p")) {
-      if (++i >= argc || !valid_port(argv[i])) {
-        usage(argv[0]);
-        return -1;
-      }
-      cfg->port = argv[i];
-    } else if (!strcmp(argv[i], "-h")) {
-      if (++i >= argc) {
-        usage(argv[0]);
-        return -1;
-      }
-      cfg->host = argv[i];
-    } else if (argv[i][0] == '-') {
-      usage(argv[0]);
-      return -1;
-    } else if (!path_set) {
-      cfg->path = argv[i];
-      path_set = 1;
-    } else {
-      usage(argv[0]);
-      return -1;
-    }
-  }
-
-  return 0;
-}
 
 static void reap_children(int *workers) {
   for (;;) {
