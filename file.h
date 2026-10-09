@@ -3,6 +3,7 @@
 
 #include <sys/stat.h>
 
+int file_open_root(const char *path);
 int file_open(int root_fd, const char *path, struct stat *st);
 const char *file_content_type(const char *path);
 

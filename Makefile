@@ -8,7 +8,7 @@ PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 DESTDIR =
 
-SOURCES = main.c server.c socket.c http.c file.c secure.c
+SOURCES = main.c server.c socket.c http.c file.c secure.c worker.c
 OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)/%.o)
 PROGRAM = $(BUILD_DIR)/$(TARGET)
 

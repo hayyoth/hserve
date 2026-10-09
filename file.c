@@ -3,8 +3,25 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <stdio.h>
 
 #include "file.h"
+
+int file_open_root(const char *path) {
+  int fd = open(path, O_RDONLY);
+  if (fd == -1) {
+    perror("hserve: open root");
+    return -1;
+  }
+
+  struct stat st;
+  if (fstat(fd, &st) == -1 || !S_ISDIR(st.st_mode)) {
+    fprintf(stderr, "hserve: path is not a directory\n");
+    close(fd);
+    return -1;
+  }
+  return fd;
+}
 
 int file_open(int root_fd, const char *path, struct stat *st) {
   if (!path || path[0] != '/') {
