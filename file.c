@@ -23,31 +23,33 @@ int file_open_root(const char *path) {
   return fd;
 }
 
+static int fail(int dir_fd, int next_fd, int err) {
+  if (dir_fd != -1) close(dir_fd);
+  if (next_fd != -1) close(next_fd);
+  errno = err;
+  return -1;
+}
+
 int file_open(int root_fd, const char *path, struct stat *st) {
-  if (!path || path[0] != '/') {
-    errno = EINVAL;
-    return -1;
-  }
+  if (!path || path[0] != '/' || !st)
+    return fail(-1, -1, EINVAL);
 
   int dir_fd = dup(root_fd);
   if (dir_fd == -1)
-    return -1;
+    return fail(-1, -1, errno);
 
   const char *p = path + 1;
-  if (*p == '\0')
+  if (!*p)
     p = "index.html";
 
   for (;;) {
     const char *slash = strchr(p, '/');
     size_t len = slash ? (size_t)(slash - p) : strlen(p);
 
-    if (len == 0 || len >= 256 ||
+    if (!len || len >= 256 ||
         (len == 1 && p[0] == '.') ||
-        (len == 2 && p[0] == '.' && p[1] == '.')) {
-      close(dir_fd);
-      errno = EACCES;
-      return -1;
-    }
+        (len == 2 && p[0] == '.' && p[1] == '.'))
+      return fail(dir_fd, -1, EACCES);
 
     char name[256];
     memcpy(name, p, len);
@@ -58,48 +60,30 @@ int file_open(int root_fd, const char *path, struct stat *st) {
     flags |= O_NOFOLLOW;
 #endif
 
-    int next_fd = openat(dir_fd, name, flags);
-    int saved_errno = errno;
+    int fd = openat(dir_fd, name, flags);
+    int err = errno;
     close(dir_fd);
 
-    if (next_fd == -1) {
-      errno = saved_errno;
-      return -1;
-    }
+    if (fd == -1)
+      return fail(-1, -1, err);
 
-    struct stat current;
-    if (fstat(next_fd, &current) == -1) {
-      saved_errno = errno;
-      close(next_fd);
-      errno = saved_errno;
-      return -1;
-    }
+    struct stat sb;
+    if (fstat(fd, &sb) == -1)
+      return fail(-1, fd, errno);
 
-    if (slash && !S_ISDIR(current.st_mode)) {
-      close(next_fd);
-      errno = ENOTDIR;
-      return -1;
-    }
+    if (slash ? !S_ISDIR(sb.st_mode) : !S_ISREG(sb.st_mode))
+      return fail(-1, fd, slash ? ENOTDIR : EACCES);
 
     if (!slash) {
-      if (!S_ISREG(current.st_mode)) {
-        close(next_fd);
-        errno = EACCES;
-        return -1;
-      }
-
-      *st = current;
-      return next_fd;
+      *st = sb;
+      return fd;
     }
 
-    dir_fd = next_fd;
+    dir_fd = fd;
     p = slash + 1;
 
-    if (*p == '\0') {
-      close(dir_fd);
-      errno = EISDIR;
-      return -1;
-    }
+    if (!*p)
+      return fail(dir_fd, -1, EISDIR);
   }
 }
 
