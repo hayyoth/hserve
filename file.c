@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "file.h"
+#include "secure.h"
 
 int file_open_root(const char *path) {
   int fd = open(path, O_RDONLY);
@@ -46,9 +47,7 @@ int file_open(int root_fd, const char *path, struct stat *st) {
     const char *slash = strchr(p, '/');
     size_t len = slash ? (size_t)(slash - p) : strlen(p);
 
-    if (!len || len >= 256 ||
-        (len == 1 && p[0] == '.') ||
-        (len == 2 && p[0] == '.' && p[1] == '.'))
+    if (is_invalid_segment(p, len))
       return fail(dir_fd, -1, EACCES);
 
     char name[256];
