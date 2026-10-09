@@ -106,6 +106,7 @@ hserve/
 ├── build/         # Compiled binary and object files
 ├── main.c         # Entry point
 ├── server.c       # Server setup and main loop
+├── worker.c       # Process management, fork, and worker lifecycle
 ├── socket.c       # Socket handling
 ├── http.c         # HTTP request handling
 ├── file.c         # File access and content types
