@@ -27,7 +27,6 @@ int server_run(const ServerConfig *cfg) {
   printf("Serving %s at %s:%s\n", cfg->path, cfg->host, cfg->port);
   fflush(stdout);
 
-  int workers = 0;
   struct pollfd pfd = { .fd = listen_fd, .events = POLLIN };
 
   for (;;) {
@@ -40,11 +39,12 @@ int server_run(const ServerConfig *cfg) {
       break;
     }
 
-    worker_reap(&workers);
+    worker_reap();
 
     if (rc == 0 || !(pfd.revents & POLLIN)) continue;
 
-    worker_spawn(listen_fd, root_fd, &workers);
+    // client connect
+    worker_spawn(listen_fd, root_fd);
   }
 
   close(listen_fd);

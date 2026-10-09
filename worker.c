@@ -8,16 +8,18 @@
 #include "http.h"
 
 #define MAX_WORKERS 32
+static int workers = 0;
 
 // Reap finished child processes (clean up zombies)
-void worker_reap(int *workers) {
+void worker_reap(void) {
   while (waitpid(-1, NULL, WNOHANG) > 0) {
-    if (*workers > 0) (*workers)--;
+    if (workers > 0) 
+      workers--;
   }
 }
 
 // Accept connection, check capacity, and fork a worker process
-void worker_spawn(int listen_fd, int root_fd, int *workers) {
+void worker_spawn(int listen_fd, int root_fd) {
   int client_fd = accept(listen_fd, NULL, NULL);
   if (client_fd == -1) {
     if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) return;
@@ -26,7 +28,7 @@ void worker_spawn(int listen_fd, int root_fd, int *workers) {
   }
 
   // Over capacity, silently reject connection
-  if (*workers >= MAX_WORKERS) {
+  if (workers >= MAX_WORKERS) {
     close(client_fd);
     return;
   }
@@ -38,7 +40,8 @@ void worker_spawn(int listen_fd, int root_fd, int *workers) {
     return;
   }
 
-  if (pid == 0) { // --- CHILD PROCESS ---
+  if (pid == 0) { 
+    // --- CHILD PROCESS ---
     close(listen_fd);
     http_handle(client_fd, root_fd);
     close(client_fd);
@@ -47,6 +50,6 @@ void worker_spawn(int listen_fd, int root_fd, int *workers) {
   }
 
   // --- PARENT PROCESS ---
-  (*workers)++;
+  workers++;
   close(client_fd);
 }
