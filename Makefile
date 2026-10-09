@@ -10,6 +10,7 @@ DESTDIR =
 
 SOURCES = main.c server.c socket.c http.c file.c secure.c worker.c
 OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)/%.o)
+DEPS = $(OBJECTS:.o=.d)
 PROGRAM = $(BUILD_DIR)/$(TARGET)
 
 .PHONY: all clean install uninstall
@@ -20,7 +21,7 @@ $(PROGRAM): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $@
 
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -35,3 +36,5 @@ uninstall:
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+-include $(DEPS)
